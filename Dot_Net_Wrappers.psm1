@@ -11,6 +11,7 @@
             Get-DSObject
         System.DirectoryServices.ActiveDirectory.Domain
             Get-Domain
+            Get-DomainController
         System.DirectoryServices.ActiveDirectory.Forest
             Get-ForestTrustInfo
     
@@ -262,6 +263,16 @@ function Get-Domain{
   
     return $Domain
 }
+
+function Get-DomainController($domain=$null){
+    if($domain -ne $null){
+        $context = New-Object System.DirectoryServices.ActiveDirectory.DirectoryContext("domain",$domain)
+        $controllers = [System.DirectoryServices.ActiveDirectory.Domain]::getdomain($context).domaincontrollers
+    }else{
+        $controllers = [System.DirectoryServices.ActiveDirectory.Domain]::getcurrentdomain().domaincontrollers
+    }
+    return $controllers | select Domain,@{n='Name';e={$_.Name.split('.')[0]}},IPAddress,Roles
+}  
 
 function Get-ForestTrustInfo($Forest,$Credential=$null){
     $TrustDirection = @{
