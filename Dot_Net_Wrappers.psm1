@@ -2,14 +2,21 @@
     This module demonstrates how to wrap .net cleases into PowerShell functions
     As I add to this module I'll reference which classes I'm demonstrating.
 
-    Classes so far:
+    Classes so far (with functions using class listed below class:
+    Directory Services:
         System.DirectoryServices.DirectoryEntry
-            Functions that use this class:
-                Get-DSObject
-                Set-DSObject
+            Get-DSObject
+            Set-DSObject
         System.DirectoryServices.DirectorySearcher
-            Functions that use this class:
-                Get-DSObject
+            Get-DSObject
+        System.DirectoryServices.ActiveDirectory.Domain
+            Get-Domain
+        System.DirectoryServices.ActiveDirectory.Forest
+            Get-ForestTrustInfo
+    
+    Networking:
+        System.Net.NetworkInformation.Ping
+            Ping-Host
 
 
 #>
@@ -223,4 +230,108 @@ function Set-DSObject{
     return Invoke-Expression "`$User | select distinguishedName,$($ObjectAttributes.keys -join ',')"
 }
 
+function Get-Domain{  
+    param(
+            [string]$TargetDomain='',
+            [Management.Automation.PSCredential]$Credential,
+            [switch]$Trusts,
+            [switch]$DCs,
+            [switch]$GUID
+          )
+    $currentDomainLDAP = (([System.DirectoryServices.ActiveDirectory.Domain]::getcurrentdomain()).GetDirectoryEntry()).distinguishedName
+    if($TargetDomain -ne ''){
+        if($Credential){            
+            $context = New-Object System.DirectoryServices.ActiveDirectory.DirectoryContext("domain",$TargetDomain,$Credential.username,$Credential.GetNetworkCredential().password)            
+        }else{
+            $context = New-Object System.DirectoryServices.ActiveDirectory.DirectoryContext("domain",$TargetDomain)
+        }    
+        $Domain = [System.DirectoryServices.ActiveDirectory.Domain]::getdomain($context)          
+    }else{
+        $CurrentDomain = [System.DirectoryServices.ActiveDirectory.Domain]::getcurrentdomain()
+        if($Credential){          
+            $context = New-Object System.DirectoryServices.ActiveDirectory.DirectoryContext("domain",$CurrentDomain.name,$Credential.username,$Credential.GetNetworkCredential().password)
+            $Domain = [System.DirectoryServices.ActiveDirectory.Domain]::getdomain($context)
+        }else{
+            $Domain = $CurrentDomain
+        }                                              
+    }
+    
+    if($Trusts){return $Domain.GetAllTrustRelationships()} 
+    if($DCs){return $Domain.DomainControllers | select name,IPAddress,Roles,@{n='IsGlobalCatalog';e={"$($_.isglobalcatalog())"}},SiteName} 
+    if($GUID){return $Domain.GetDirectoryEntry().guid}
+  
+    return $Domain
+}
+
+function Get-ForestTrustInfo($Forest,$Credential=$null){
+    $TrustDirection = @{
+        '1' = 'Inbound'
+        '2' = 'Outbound'
+        '3' = 'Bidirectional'
+    }
+    $SortOrder = 1
+    $DomainSIDList = '' | select SourceDomain,TrustedDomain,NetBIOSName,SID,Direction,TrustIsOk,TrustStatusString,Order
+    $Results = @()
+    
+    if($Forest -ne ''){
+        if($Credential){            
+            $context = New-Object System.DirectoryServices.ActiveDirectory.DirectoryContext("Forest",$Forest,$Credential.username,$Credential.GetNetworkCredential().password)            
+        }else{
+            $context = New-Object System.DirectoryServices.ActiveDirectory.DirectoryContext("Forest",$Forest)
+        }    
+        $ForestData = [System.DirectoryServices.ActiveDirectory.Forest]::GetForest($context)          
+    }else{
+        $CurrentForest = [System.DirectoryServices.ActiveDirectory.Forest]::GetCurrentForest()
+        if($Credential){          
+            $context = New-Object System.DirectoryServices.ActiveDirectory.DirectoryContext("Forest",$CurrentForest.name,$Credential.username,$Credential.GetNetworkCredential().password)
+            $ForestData = [System.DirectoryServices.ActiveDirectory.Forest]::GetForest($context)
+        }else{
+            $ForestData = $CurrentForest
+        }                                              
+    }
+    
+    $ForestDC = $ForestData.Domains | ?{$_.name -eq $_.forest}|%{$_.PdcRoleOwner.IPAddress}
+    $ForestLocal = Get-WmiObject -Namespace root\MicrosoftActiveDirectory -Class Microsoft_LocalDomainInfo -ComputerName $ForestDC -Credential $Credential
+    $DomainSIDList.SourceDomain = $ForestLocal.DNSname
+    $DomainSIDList.TrustedDomain = "ForestRoot::$($ForestLocal.DNSname)"
+    $DomainSidList.NetBIOSName = $ForestLocal.FlatName
+    $DomainSIDList.SID = $ForestLocal.SID
+    $DomainSIDList.Direction = 'ROOT'
+    $DomainSIDList.TrustIsOk = 'N/A'
+    $DomainSIDList.TrustStatusString = 'N/A'
+    $DomainSIDList.Order = 0
+    $Results += $DomainSIDList | select *
+    
+    Foreach($Domain in $ForestData.Domains){
+        $Source = $Domain.Name
+        $Order = if($Domain.parent -eq $null){1}else{$SortOrder += 1;$SortOrder}
+        $Trusts = Get-WmiObject -Namespace root\MicrosoftActiveDirectory -Class Microsoft_DomainTrustStatus -ComputerName $Domain.PdcRoleOwner.IPAddress -Credential $Credential
+        foreach($Trust in $Trusts){
+            $DomainSIDList.SourceDomain = $Source
+            $DomainSIDList.TrustedDomain = $Trust.TrustedDomain
+            $DomainSIDList.NetBIOSName = $Trust.FlatName
+            $DomainSIDList.SID = $Trust.SID
+            $DomainSIDList.Direction = $TrustDirection.([string]$Trust.TrustDirection)
+            $DomainSIDList.TrustIsOk = $Trust.TrustIsOk
+            $DomainSIDList.TrustStatusString = $Trust.TrustStatusString
+            $DomainSIDList.Order = $Order
+            $Results += $DomainSIDList | select *
+        }
+    }
+    return $Results | sort Order | select SourceDomain,TrustedDomain,NetBIOSName,SID,Direction,TrustIsOk,TrustStatusString
+}
+
 <#----------End DirectoryService-Namespace Functions---------#>
+
+<#----------Networking----------#>
+function Ping-Host($NetHost,$Attempts=1){
+    $Collect = ''|select Host,IPAddress,Status
+    $result = @()
+    $ping = New-Object System.Net.NetworkInformation.Ping
+    for($i=1;$i -le $Attempts;$i++){
+        $ping.Send($NetHost,20) | %{$Collect.Host = $NetHost;$Collect.IPAddress = $_.address.IPaddressToString;$Collect.Status = $_.Status}
+        $result += $Collect
+    }
+    return $result
+}
+
