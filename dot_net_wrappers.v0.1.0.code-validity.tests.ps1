@@ -41,7 +41,7 @@ Describe "$module Module Tests" {
         }
     }
 
-    $Script:FunctionDirectories = Get-ChildItem -Filter *functions | Where-Object{$_.PSIsContainer} | Select-Object -ExpandProperty FullName
+    $Script:FunctionDirectories = Get-ChildItem -Path $here -Filter *functions | Where-Object{$_.PSIsContainer} | Select-Object -ExpandProperty FullName
     foreach($Directory in $Script:FunctionDirectories){
         $ModuleFunctionFiles = Get-ChildItem -Path "$Directory\*.ps1" -Exclude *test.ps1 | Select-Object -ExpandProperty FullName
         foreach($File in $ModuleFunctionFiles){
