@@ -16,6 +16,7 @@
 . '.\Helper-Functions\function-Get-NameFromDN.ps1'
 . '.\Helper-Functions\function-Get-ParentContainer.ps1'
 . '.\Helper-Functions\function-Get-CanonicalNameFromDN.ps1'
+. '.\Helper-Functions\function-Get-SpecialFolderPath.ps1'
 
 
 <#----------DirectoryService-Namespace Functions----------#>
