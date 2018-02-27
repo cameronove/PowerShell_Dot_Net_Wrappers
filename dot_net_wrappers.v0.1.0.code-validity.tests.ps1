@@ -3,6 +3,10 @@ $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $module = 'Dot_Net_Wrappers' 
 
 
+<#
+    These test are desiged to test whether the code is valid and some best practices when writing code.
+    Individual function tests will be built in seperate files for testing the logic of functions
+#>
 
 Describe "$module Module Tests" {
 
