@@ -95,6 +95,5 @@ function Find-ScriptCommand{
             return $Commands | Sort-Object
         }
     }
-
-    return $Commands
+    
 } #End Find-ScriptCommand function
