@@ -1,4 +1,4 @@
-function Find-ScriptCommand{
+function Find-ScriptCommand {
     <#
     .SYNOPSIS
     Before running a script you can feed the script contents into the function.  It will check to see if the commands in the script are installed or defined in the script and report the result.
@@ -28,7 +28,7 @@ function Find-ScriptCommand{
     param(
         [Parameter(Position = 0, Mandatory = $true)]
         [string]$ScriptPath,
-        [ValidateSet('ShowAll','ShowInstalled','ShowDefinedInTargetScript','ShowNotFound','ShowKeyCode')]
+        [ValidateSet('ShowAll', 'ShowInstalled', 'ShowDefinedInTargetScript', 'ShowNotFound', 'ShowKeyCode')]
         [string]$Show = 'ShowAll'
     )
 
@@ -37,47 +37,48 @@ function Find-ScriptCommand{
     $errors = $null
     $ScriptTokens = [System.Management.Automation.PSParser]::Tokenize($ScriptContent, [ref]$errors)
 
-    $FoundCmds = $ScriptTokens | Where-Object{$_.type -eq 'Command'} | Select-Object -ExpandProperty content -Unique
+    $FoundCmds = $ScriptTokens | Where-Object {$_.type -eq 'Command'} | Select-Object -ExpandProperty content -Unique
 
     $MissingCmdList = [System.Collections.Generic.List[string]]::new()
     $Commands = [System.Collections.Generic.List[string]]::new()
-    foreach($cmd in $FoundCmds){
+    foreach ($cmd in $FoundCmds) {
         $vCmd = Get-Command $cmd -ErrorAction SilentlyContinue -ErrorVariable MissingCmds
-        if($vCmd){
+        if ($vCmd) {
             $Commands.Add("GC:$($vCmd.name)")
         }
-        if($MissingCmds){
+        if ($MissingCmds) {
             $MissingCmdList.Add($MissingCmds[0].CategoryInfo.TargetName)
         }
     }
 
-    If($MissingCmdList.Count -gt 0){
-        $CmdArgs = $ScriptTokens | Where-Object{$_.type -eq 'CommandArgument'} | Select-Object -ExpandProperty content -Unique
-        foreach($cmd in $MissingCmdList){
-            if($CmdArgs -match $cmd){
+    If ($MissingCmdList.Count -gt 0) {
+        $CmdArgs = $ScriptTokens | Where-Object {$_.type -eq 'CommandArgument'} | Select-Object -ExpandProperty content -Unique
+        foreach ($cmd in $MissingCmdList) {
+            if ($CmdArgs -match $cmd) {
                 $Commands.Add("SD:$cmd")
-            }else{
+            }
+            else {
                 $Commands.Add("NF:$cmd")
             }
         }
     }
 
-    switch($Show){
-        'ShowAll'{
+    switch ($Show) {
+        'ShowAll' {
             return $Commands | Sort-Object
         }
-        'ShowInstalled'{
-            return $Commands | Where-Object{$_ -match '\AGC:'} | ForEach-Object{$_ -replace "\AGC:",""} | Sort-Object
+        'ShowInstalled' {
+            return $Commands | Where-Object {$_ -match '\AGC:'} | ForEach-Object {$_ -replace "\AGC:", ""} | Sort-Object
         }
-        'ShowDefinedInTargetScript'{
-            return $Commands | Where-Object{$_ -match '\ASD:'} | ForEach-Object{$_ -replace "\ASD:",""} | Sort-Object
+        'ShowDefinedInTargetScript' {
+            return $Commands | Where-Object {$_ -match '\ASD:'} | ForEach-Object {$_ -replace "\ASD:", ""} | Sort-Object
         }
-        'ShowNotFound'{
-            return $Commands | Where-Object{$_ -match '\ANF:'} | ForEach-Object{$_ -replace "\ANF:",""} | Sort-Object
+        'ShowNotFound' {
+            return $Commands | Where-Object {$_ -match '\ANF:'} | ForEach-Object {$_ -replace "\ANF:", ""} | Sort-Object
         }
-        'ShowKeyCode'{
+        'ShowKeyCode' {
             $Results = [System.Collections.Generic.list[PSObject]]::new()
-            $KeyCodes = [PSCustomObject]@{PrefixCode = '';Description = ''}
+            $KeyCodes = [PSCustomObject]@{PrefixCode = ''; Description = ''}
 
             $KeyCodes.PrefixCode = 'GC:'
             $KeyCodes.Description = "Commands that are found by using the 'Get-Command' cmdlet and would be considered as 'Installed'."
