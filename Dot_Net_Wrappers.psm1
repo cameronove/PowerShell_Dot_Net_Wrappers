@@ -31,4 +31,7 @@
 
 . '.\Net-Functions\function-Ping-Host.ps1'
 
+<#----------Code Analysis----------#>
+. '.\CodeAnalysis-Functions\function-Find-ScriptCommand.ps1'
+
 
