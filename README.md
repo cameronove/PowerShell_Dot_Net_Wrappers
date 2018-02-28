@@ -1,4 +1,4 @@
-# ![logo](/dotnetwrapper_v3.png) PowerShell_Dot_Net_Wrapper
+# ![logo](/dotnetwrapper.png) PowerShell_Dot_Net_Wrapper
 _A PowerShell module that wraps .net classes into functions_
 
 ## Module Background
