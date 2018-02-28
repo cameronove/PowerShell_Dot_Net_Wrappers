@@ -1,7 +1,7 @@
 # ![logo](/dotnetwrapper_v3.png) PowerShell_Dot_Net_Wrapper
 _A PowerShell module that wraps .net classes into functions_
 
-##Module Background
+## Module Background
 
 Many of my colleagues are surprised that you can actually access `.NET` objects with powershell.  Over the years I've preferred to use `.NET` classes and objects quite often over `cmdlets` or `functions` provided by PowerShell or by some third party.
 
@@ -16,7 +16,7 @@ So, in addition to providing a reference for using `.NET` with PowerShell, I've 
   - Because I've changed the way I've developed modules, it is now easier to test my functions.  This repository now includes a number of code validity tests using Pester.
 - Because I'm testing my modules this repository is can also be used as a reference on writing Pester tests.  There are more tests to come...
 
-##Technical Reference
+## Technical Reference
 
 This module is about showing how to use `.NET` with PowerShell.  Here is a list of the functions in this module and the `.NET` classes they utilize.  As a note "Helper" functions are not meant as examples of using `.NET`, but are there to help the other functions.
 - DS-Functions_
