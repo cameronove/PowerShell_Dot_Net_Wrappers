@@ -1,4 +1,28 @@
-function Get-ForestTrustInfo($Forest, $Credential = $null) {
+function Get-ForestTrustInfo {
+    <#
+    .SYNOPSIS
+    Returns information about the forest root of an AD Domain
+    
+    .DESCRIPTION
+    Uses .net class to gather forest trust information
+    
+    .PARAMETER Forest
+    Accepts an FQDN of the forest.
+    
+    .PARAMETER Credential
+    Only accepts a PSCredential
+
+    .NOTES
+    Dev note:  this function needs to be properly documented both by commenting and better vetting of information used by function 
+        e.g.  Setting up a validation test for $Forest would prevent certain types of errors with the bonus of helping to document,
+        by means of the code itself, what is required for the $Forest parameter.
+    
+    #>
+    [cmdletbinding()]
+    param(
+        $Forest,
+        [PSCredential]$Credential
+    )
     $TrustDirection = @{
         '1' = 'Inbound'
         '2' = 'Outbound'

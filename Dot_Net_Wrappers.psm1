@@ -33,5 +33,5 @@
 
 <#----------Code Analysis----------#>
 . '.\CodeAnalysis-Functions\function-Find-ScriptCommand.ps1'
-
+. '.\CodeAnalysis-Functions\function-Test-ScriptForAlias.ps1'
 

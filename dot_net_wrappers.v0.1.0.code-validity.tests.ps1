@@ -12,13 +12,13 @@ Describe "$module Module Tests" {
 
     Context "Root Module Validity" {
 
-        It "has the root module Dot_Net_Wrappers.psm1" {
+        It "has the root module $Module.psm1" {
             "$here\$module.psm1" | Should Exist
         }
 
         It "has a manifest file of $module.psd1" {
             "$here\$module.psd1" | Should Exist
-            "$here\$module.psd1" | Should -FileContentMatchMultiline 'Dot_Net_Wrappers'
+            "$here\$module.psd1" | Should -FileContentMatchMultiline $module
         }
 
         It "$module is valid PowerShell code" {
@@ -50,7 +50,7 @@ Describe "$module Module Tests" {
         $ModuleFunctionFiles = Get-ChildItem -Path "$Directory\*.ps1" -Exclude *test.ps1 | Select-Object -ExpandProperty FullName
         foreach($File in $ModuleFunctionFiles){
             $Script:FileName = Split-Path $File -Leaf
-            $Script:FunctionName = (Split-Path $File -Leaf).trimend('.ps1').TrimStart('function-')
+            $Script:FunctionName = (Split-Path $File -Leaf) -replace '\.ps1\Z','' -replace '\Afunction\-',''
             Context "Test code validity for function: $Script:FunctionName" {
 
                 It "$Script:FunctionName contains valid PowerShell code" {
@@ -73,6 +73,10 @@ Describe "$module Module Tests" {
 
                 It "$Script:FunctionName should have an #End comment after the last curly bracket '}'" {
                     $File | Should -FileContentMatch "\}.*\#\s*End $Script:FunctionName function"
+                }
+
+                It "$Script:FunctionName has tests - $($File -replace '\.ps1\Z','').test.ps1 should exist" {
+                    "$($File -replace '\.ps1\Z').test.ps1" | Should Exist
                 }
             }
         }
